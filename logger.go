@@ -13,7 +13,7 @@ import (
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
-var std = New(nil)
+var std = New(nil, nil)
 
 // Env 运行环境
 type Env string
@@ -53,13 +53,14 @@ type Logger struct {
 	fileLogger *lumberjack.Logger
 }
 
-func New(cfg *Config) *Logger {
+func New(cfg *Config, writers []io.Writer) *Logger {
 	if cfg == nil {
-		return New(NewDevelopConfig())
+		return New(NewDevelopConfig(), writers)
 	}
 
 	log := &Logger{
-		config: cfg,
+		config:  cfg,
+		writers: writers,
 	}
 	if err := log.init(); err != nil {
 		panic(err)
