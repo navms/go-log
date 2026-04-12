@@ -1,5 +1,12 @@
 package logger
 
+import (
+	"os"
+	"path/filepath"
+	"runtime"
+	"strings"
+)
+
 // Config 日志配置
 type Config struct {
 	Env                Env    `mapstructure:"env" yaml:"env"`                                 // 运行环境
@@ -26,12 +33,12 @@ func NewDevelopConfig() *Config {
 	}
 }
 
-func NewProductConfig() *Config {
+func NewProductConfig(appName string) *Config {
 	return &Config{
 		Env:            Prod,
 		Level:          InfoL,
 		Output:         File,
-		Filename:       "./logs/app.log",
+		Filename:       defaultLogFilePath(appName),
 		MaxSize:        128,
 		MaxBackups:     3,
 		MaxAge:         7,
@@ -39,4 +46,36 @@ func NewProductConfig() *Config {
 		ShowCaller:     true,
 		RedirectStdLog: false,
 	}
+}
+
+func defaultLogFilePath(appName string) string {
+	switch runtime.GOOS {
+	case "darwin":
+		home, err := os.UserHomeDir()
+		if err == nil {
+			return filepath.Join(home, "Library", "Logs", appName, "app.log")
+		}
+	case "windows":
+		base := os.Getenv("LOCALAPPDATA")
+		if strings.TrimSpace(base) == "" {
+			base, _ = os.UserConfigDir()
+		}
+		if strings.TrimSpace(base) != "" {
+			return filepath.Join(base, appName, "logs", "app.log")
+		}
+	default:
+		base := os.Getenv("XDG_STATE_HOME")
+		if strings.TrimSpace(base) == "" {
+			home, err := os.UserHomeDir()
+			if err == nil {
+				base = filepath.Join(home, ".local", "state")
+			}
+		}
+		if strings.TrimSpace(base) != "" {
+			return filepath.Join(base, appName, "logs", "app.log")
+		}
+	}
+
+	// fallback: avoid relative path when user/home dirs are unavailable.
+	return filepath.Join(os.TempDir(), appName, "logs", "app.log")
 }
