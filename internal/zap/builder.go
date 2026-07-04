@@ -46,7 +46,7 @@ func New(cfg BuildConfig) (*Backend, error) {
 	core := buildCore(enc, ws, atomicLevel, cfg.Sampling)
 	core = newHookCore(core, cfg.Hooks)
 
-	opts := []zap.Option{zap.AddCallerSkip(1)}
+	opts := []zap.Option{zap.AddCallerSkip(2)}
 	if cfg.Encoder == nil || !cfg.Encoder.DisableCallerCapture() {
 		opts = append(opts, zap.AddCaller())
 	}

@@ -57,12 +57,58 @@ func Default() Logger {
 	return defaultLogger
 }
 
-func Trace(msg string, kv ...any) { Default().Trace(msg, kv...) }
-func Debug(msg string, kv ...any) { Default().Debug(msg, kv...) }
-func Info(msg string, kv ...any)  { Default().Info(msg, kv...) }
-func Warn(msg string, kv ...any)  { Default().Warn(msg, kv...) }
-func Error(msg string, kv ...any) { Default().Error(msg, kv...) }
-func Fatal(msg string, kv ...any) { Default().Fatal(msg, kv...) }
+func withZapLogger(zapFn func(*zapLogger), fallback func(Logger)) {
+	mu.RLock()
+	l := defaultLogger
+	mu.RUnlock()
+	if zl, ok := l.(*zapLogger); ok {
+		zapFn(zl)
+		return
+	}
+	fallback(l)
+}
+
+func Trace(msg string, kv ...any) {
+	withZapLogger(
+		func(zl *zapLogger) { zl.traceForGlobal(msg, kv...) },
+		func(l Logger) { l.Trace(msg, kv...) },
+	)
+}
+
+func Debug(msg string, kv ...any) {
+	withZapLogger(
+		func(zl *zapLogger) { zl.sugarForGlobal().Debugw(msg, kv...) },
+		func(l Logger) { l.Debug(msg, kv...) },
+	)
+}
+
+func Info(msg string, kv ...any) {
+	withZapLogger(
+		func(zl *zapLogger) { zl.sugarForGlobal().Infow(msg, kv...) },
+		func(l Logger) { l.Info(msg, kv...) },
+	)
+}
+
+func Warn(msg string, kv ...any) {
+	withZapLogger(
+		func(zl *zapLogger) { zl.sugarForGlobal().Warnw(msg, kv...) },
+		func(l Logger) { l.Warn(msg, kv...) },
+	)
+}
+
+func Error(msg string, kv ...any) {
+	withZapLogger(
+		func(zl *zapLogger) { zl.sugarForGlobal().Errorw(msg, kv...) },
+		func(l Logger) { l.Error(msg, kv...) },
+	)
+}
+
+func Fatal(msg string, kv ...any) {
+	withZapLogger(
+		func(zl *zapLogger) { zl.sugarForGlobal().Fatalw(msg, kv...) },
+		func(l Logger) { l.Fatal(msg, kv...) },
+	)
+}
 
 func With(kv ...any) Logger { return Default().With(kv...) }
 

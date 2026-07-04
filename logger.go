@@ -151,6 +151,13 @@ func (l *zapLogger) Trace(msg string, kvs ...any) {
 	}
 }
 
+func (l *zapLogger) traceForGlobal(msg string, kvs ...any) {
+	zl := l.backend.Zap().WithOptions(zap.AddCallerSkip(1))
+	if ce := zl.Check(zapbackend.TraceLevel, msg); ce != nil {
+		ce.Write(sugarKVToZapFields(kvs)...)
+	}
+}
+
 func (l *zapLogger) Debug(msg string, kvs ...any) { l.backend.Sugar().Debugw(msg, kvs...) }
 func (l *zapLogger) Info(msg string, kvs ...any)  { l.backend.Sugar().Infow(msg, kvs...) }
 func (l *zapLogger) Warn(msg string, kvs ...any)  { l.backend.Sugar().Warnw(msg, kvs...) }
@@ -182,6 +189,10 @@ func (l *zapLogger) SetLevel(level Level) {
 }
 
 func (l *zapLogger) Sync() error { return l.backend.Sync() }
+
+func (l *zapLogger) sugarForGlobal() *zap.SugaredLogger {
+	return l.backend.Zap().WithOptions(zap.AddCallerSkip(1)).Sugar()
+}
 
 func (l *zapLogger) Typed() TypedLogger { return &typedLogger{backend: l.backend} }
 
